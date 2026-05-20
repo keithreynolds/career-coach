@@ -39,8 +39,11 @@ On submit, `POST /api/analyze` runs:
 1. Parse resume text with `pdf-parse` or `mammoth`.
 2. Scrub PII (email, phone, address, URLs, LinkedIn, and likely names in the first 3 lines) via `lib/pii.ts`.
 3. Build the Super Prompt via `lib/prompt.ts`.
-4. Call Claude (`claude-sonnet-4-6`).
-5. Parse and return JSON to the client.
+4. Call Claude (`claude-sonnet-4-6`) with forced tool use, so the response is
+   constrained to the schema in `lib/schema.ts` — no brittle JSON parsing.
+   Transient failures are retried once automatically.
+5. Normalize the response (clamp scores, recompute the weighted overall score
+   server-side, fill defaults) and return it to the client.
 
 The results dashboard renders inline on the same page (no routing).
 
@@ -56,6 +59,7 @@ lib/
   pii.ts                 Regex-based PII scrubber
   parser.ts              PDF/DOCX text extraction
   prompt.ts              Super Prompt builder
+  schema.ts              Tool-use schema + response normalizer
   types.ts               Shared TS types
 components/
   StepIndicator.tsx

@@ -56,48 +56,19 @@ Check the resume for the presence and quality of:
 Assign each a status and a brief note.
 
 ## TASK C — Impact Score
-1. Keyword Gap Analysis: List 3-5 keywords in the job description but missing from the resume
-2. Score each component (0-100):
+1. Keyword Gap Analysis: List 3-5 important keywords found in the job description but missing from the resume.
+2. Score each component from 0 to 100 based on quality and fit for the target job:
    - Summary Score
    - Experience Score
    - Education Score
-3. Calculate Overall Score using career-stage weights:
-   - New Grad: Summary 20%, Experience 50%, Education 30%
-   - Mid-Career: Summary 20%, Experience 60%, Education 20%
-   - Late-Career: Summary 20%, Experience 70%, Education 10%
-4. Score label rules:
-   - 80 or above: "High interview probability"
-   - 61 to 79: "50/50 chance — improvements needed"
-   - 60 or below: "High risk of rejection"
-5. Provide 3-5 specific actionable steps to reach 90%+
-6. Generate one job search coaching tip based on the stretch goal
+3. Provide 3-5 specific, actionable steps the candidate can take to reach a 90%+ resume.
+4. Generate one job-search coaching tip grounded in the candidate's stretch goal.
+
+Note: the overall weighted score, its label, and the AI-voice warning are
+computed automatically by the application — you do not need to provide them.
 
 ## OUTPUT
-Respond ONLY in valid JSON. No markdown. No explanation. No backticks.
-{
-  "career_lens": {
-    "north_star": "string",
-    "success_indicators": ["string", "string", "string"]
-  },
-  "structural_audit": {
-    "summary_statement": { "status": "present|missing|weak", "note": "string" },
-    "work_experience": { "status": "present|missing|weak", "note": "string" },
-    "education": { "status": "present|missing|weak", "note": "string" },
-    "action_verbs": { "status": "strong|weak", "note": "string" },
-    "quantified_achievements": { "status": "present|missing", "note": "string" },
-    "date_formatting": { "status": "pass|fail", "note": "string" },
-    "contact_info": { "status": "pass|fail", "note": "string" }
-  },
-  "impact_score": {
-    "keyword_gaps": ["string", "string", "string"],
-    "summary_score": number,
-    "experience_score": number,
-    "education_score": number,
-    "overall_score": number,
-    "score_label": "string",
-    "action_steps": ["string", "string", "string"],
-    "coaching_tip": "string",
-    "ai_voice_warning": "49% of hiring managers reject AI-sounding resumes. Rewrite all suggestions in your own voice before submitting."
-  }
-}`;
+Return your complete analysis by calling the \`submit_career_analysis\` tool.
+Populate every field the tool requires. Scores must be integers from 0 to 100.
+Do not write any prose outside of the tool call.`;
 }

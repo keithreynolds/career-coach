@@ -3,12 +3,21 @@ import Anthropic from "@anthropic-ai/sdk";
 import { parseResume } from "@/lib/parser";
 import { scrubPII } from "@/lib/pii";
 import { buildPrompt } from "@/lib/prompt";
+import {
+  ANALYSIS_TOOL,
+  ANALYSIS_TOOL_NAME,
+  AnalysisValidationError,
+  normalizeAnalysis,
+} from "@/lib/schema";
+import type { AnalysisResult, CareerStage } from "@/lib/types";
 
 export const runtime = "nodejs";
 export const maxDuration = 60;
 
 const MAX_FILE_BYTES = 10 * 1024 * 1024; // 10 MB
 const MIN_JOB_DESCRIPTION_LENGTH = 100;
+const MAX_OUTPUT_TOKENS = 4096; // headroom so structured output is never truncated
+const MAX_ATTEMPTS = 2; // one automatic retry on a transient/degraded response
 
 // Model ID is configurable via the ANTHROPIC_MODEL env var so it can be
 // swapped without code changes. Falls back to the current Claude Sonnet 4.6.
@@ -16,32 +25,77 @@ const DEFAULT_MODEL = "claude-sonnet-4-6";
 const MODEL = process.env.ANTHROPIC_MODEL?.trim() || DEFAULT_MODEL;
 
 /**
- * Extract JSON content from a model response that may include
- * surrounding whitespace or accidental code fences.
+ * Run a single analysis call against Claude using forced tool use.
+ * The model is constrained to the ANALYSIS_TOOL schema, so the SDK returns
+ * an already-parsed object — no brittle free-text JSON parsing required.
  */
-function extractJSON(raw: string): unknown {
-  if (!raw) throw new Error("Empty response from model");
-  let trimmed = raw.trim();
+async function runAnalysis(
+  anthropic: Anthropic,
+  prompt: string,
+  careerStage: CareerStage
+): Promise<AnalysisResult> {
+  const message = await anthropic.messages.create({
+    model: MODEL,
+    max_tokens: MAX_OUTPUT_TOKENS,
+    temperature: 0.2,
+    tools: [ANALYSIS_TOOL],
+    tool_choice: { type: "tool", name: ANALYSIS_TOOL_NAME },
+    messages: [{ role: "user", content: prompt }],
+  });
 
-  // Strip code fences if the model produced them despite instructions.
-  if (trimmed.startsWith("```")) {
-    trimmed = trimmed.replace(/^```(?:json)?/i, "").replace(/```$/g, "");
-    trimmed = trimmed.trim();
+  const toolUse = message.content.find(
+    (block): block is Anthropic.ToolUseBlock => block.type === "tool_use"
+  );
+  if (!toolUse) {
+    throw new AnalysisValidationError(
+      "Model did not return a structured tool response."
+    );
   }
 
-  // Try direct parse first
-  try {
-    return JSON.parse(trimmed);
-  } catch {
-    // Fall back to extracting the first balanced JSON object
-    const start = trimmed.indexOf("{");
-    const end = trimmed.lastIndexOf("}");
-    if (start !== -1 && end !== -1 && end > start) {
-      const slice = trimmed.slice(start, end + 1);
-      return JSON.parse(slice);
+  // normalizeAnalysis coerces, clamps, and fills defaults; it throws an
+  // AnalysisValidationError only when the response is too degraded to show.
+  return normalizeAnalysis(toolUse.input, careerStage);
+}
+
+/** Decide whether a failed attempt is worth retrying. */
+function isRetryable(err: unknown): boolean {
+  // Degraded/empty model responses are worth one more try.
+  if (err instanceof AnalysisValidationError) return true;
+  // Transient API errors: rate limits, overload, and 5xx.
+  if (err instanceof Anthropic.APIError) {
+    const status = err.status ?? 0;
+    return status === 429 || status >= 500;
+  }
+  return false;
+}
+
+/** Map a final failure to a user-facing message and HTTP status. */
+function describeFailure(err: unknown): { message: string; status: number } {
+  if (err instanceof Anthropic.APIError) {
+    const status = err.status ?? 0;
+    if (status === 401) {
+      return {
+        message: "The server's API key was rejected. Please contact the site owner.",
+        status: 502,
+      };
     }
-    throw new Error("Model did not return valid JSON.");
+    if (status === 429) {
+      return {
+        message: "The service is busy right now. Please wait a moment and try again.",
+        status: 503,
+      };
+    }
+    if (status >= 500) {
+      return {
+        message: "The AI service is temporarily overloaded. Please try again shortly.",
+        status: 503,
+      };
+    }
   }
+  return {
+    message: "We couldn't complete the analysis. Please try again.",
+    status: 502,
+  };
 }
 
 export async function POST(req: NextRequest) {
@@ -156,34 +210,39 @@ export async function POST(req: NextRequest) {
       resume_text: scrubbedResume,
     });
 
-    // Call Claude
-    const anthropic = new Anthropic({ apiKey });
-    const message = await anthropic.messages.create({
-      model: MODEL,
-      max_tokens: 2048,
-      temperature: 0.2,
-      messages: [{ role: "user", content: prompt }],
-    });
+    // Call Claude with forced structured output, retrying once on a
+    // transient API error or a degraded response.
+    const anthropic = new Anthropic({ apiKey, maxRetries: 2 });
 
-    // Aggregate text blocks
-    const rawText = message.content
-      .filter((b): b is Anthropic.TextBlock => b.type === "text")
-      .map((b) => b.text)
-      .join("\n")
-      .trim();
+    let result: AnalysisResult | null = null;
+    let lastError: unknown = null;
 
-    let parsed: unknown;
-    try {
-      parsed = extractJSON(rawText);
-    } catch (err) {
-      console.error("JSON parse failed. Raw:", rawText);
-      return NextResponse.json(
-        { error: "The AI returned an unexpected response. Please try again." },
-        { status: 502 }
-      );
+    for (let attempt = 1; attempt <= MAX_ATTEMPTS; attempt++) {
+      try {
+        result = await runAnalysis(
+          anthropic,
+          prompt,
+          career_stage as CareerStage
+        );
+        break;
+      } catch (err) {
+        lastError = err;
+        console.error(`Analysis attempt ${attempt} failed:`, err);
+        if (attempt < MAX_ATTEMPTS && isRetryable(err)) {
+          // Brief backoff before the retry.
+          await new Promise((resolve) => setTimeout(resolve, 800));
+          continue;
+        }
+        break;
+      }
     }
 
-    return NextResponse.json(parsed, { status: 200 });
+    if (!result) {
+      const { message, status } = describeFailure(lastError);
+      return NextResponse.json({ error: message }, { status });
+    }
+
+    return NextResponse.json(result, { status: 200 });
   } catch (err: unknown) {
     const message =
       err instanceof Error ? err.message : "Unexpected server error.";
