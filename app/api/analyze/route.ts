@@ -43,6 +43,16 @@ async function runAnalysis(
     messages: [{ role: "user", content: prompt }],
   });
 
+  // Log token usage so it's visible in the Vercel "Logs" tab. The Anthropic
+  // Console remains the billing source of truth; this is for quick visibility.
+  const { input_tokens, output_tokens } = message.usage;
+  console.log(
+    `[analyze] usage model=${MODEL} ` +
+      `input_tokens=${input_tokens} output_tokens=${output_tokens} ` +
+      `total_tokens=${input_tokens + output_tokens} ` +
+      `stop_reason=${message.stop_reason}`
+  );
+
   const toolUse = message.content.find(
     (block): block is Anthropic.ToolUseBlock => block.type === "tool_use"
   );
