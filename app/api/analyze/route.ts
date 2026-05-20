@@ -24,6 +24,61 @@ const MAX_ATTEMPTS = 2; // one automatic retry on a transient/degraded response
 const DEFAULT_MODEL = "claude-sonnet-4-6";
 const MODEL = process.env.ANTHROPIC_MODEL?.trim() || DEFAULT_MODEL;
 
+// --- In-memory per-IP rate limiting ----------------------------------------
+// Caps how many analyses one client IP can run per hour, protecting the
+// Anthropic API budget when the app is shared via a public link. State lives
+// in module memory, so the limit is enforced per warm serverless instance —
+// solid protection against casual abuse with no external infrastructure.
+// The hourly cap is configurable via the RATE_LIMIT_PER_HOUR env var.
+const RATE_LIMIT_WINDOW_MS = 60 * 60 * 1000; // 1 hour
+const RATE_LIMIT_MAX = Math.max(
+  1,
+  Math.floor(Number(process.env.RATE_LIMIT_PER_HOUR)) || 10
+);
+
+type RateBucket = { count: number; resetAt: number };
+const rateBuckets = new Map<string, RateBucket>();
+
+/** Identify the client by IP, using the headers Vercel populates. */
+function getClientIp(req: NextRequest): string {
+  const forwarded = req.headers.get("x-forwarded-for");
+  if (forwarded) {
+    const first = forwarded.split(",")[0]?.trim();
+    if (first) return first;
+  }
+  return req.headers.get("x-real-ip")?.trim() || "unknown";
+}
+
+/**
+ * Record one analysis request against the client's hourly quota.
+ * Returns whether it is allowed and, when not, the seconds until reset.
+ */
+function consumeRateLimit(ip: string): {
+  allowed: boolean;
+  retryAfterSec: number;
+} {
+  const now = Date.now();
+
+  // Drop expired buckets so memory stays bounded.
+  rateBuckets.forEach((bucket, key) => {
+    if (bucket.resetAt <= now) rateBuckets.delete(key);
+  });
+
+  const bucket = rateBuckets.get(ip);
+  if (!bucket || bucket.resetAt <= now) {
+    rateBuckets.set(ip, { count: 1, resetAt: now + RATE_LIMIT_WINDOW_MS });
+    return { allowed: true, retryAfterSec: 0 };
+  }
+  if (bucket.count >= RATE_LIMIT_MAX) {
+    return {
+      allowed: false,
+      retryAfterSec: Math.ceil((bucket.resetAt - now) / 1000),
+    };
+  }
+  bucket.count += 1;
+  return { allowed: true, retryAfterSec: 0 };
+}
+
 /**
  * Run a single analysis call against Claude using forced tool use.
  * The model is constrained to the ANALYSIS_TOOL schema, so the SDK returns
@@ -219,6 +274,27 @@ export async function POST(req: NextRequest) {
       job_description,
       resume_text: scrubbedResume,
     });
+
+    // Enforce the per-IP hourly quota. Checked here — after validation and
+    // parsing — so a failed or invalid request never burns a user's quota;
+    // only real analysis attempts (which cost API tokens) are counted.
+    const rate = consumeRateLimit(getClientIp(req));
+    if (!rate.allowed) {
+      const minutes = Math.max(1, Math.ceil(rate.retryAfterSec / 60));
+      return NextResponse.json(
+        {
+          error:
+            `You've reached the limit of ${RATE_LIMIT_MAX} analyses per hour. ` +
+            `Please try again in about ${minutes} minute${
+              minutes === 1 ? "" : "s"
+            }.`,
+        },
+        {
+          status: 429,
+          headers: { "Retry-After": String(rate.retryAfterSec) },
+        }
+      );
+    }
 
     // Call Claude with forced structured output, retrying once on a
     // transient API error or a degraded response.

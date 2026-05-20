@@ -39,13 +39,15 @@ On submit, `POST /api/analyze` runs:
 1. Parse resume text with `pdf-parse` or `mammoth`.
 2. Scrub PII (email, phone, address, URLs, LinkedIn, and likely names in the first 3 lines) via `lib/pii.ts`.
 3. Build the Super Prompt via `lib/prompt.ts`.
-4. Call Claude (`claude-sonnet-4-6`) with forced tool use, so the response is
+4. Enforce a per-IP hourly rate limit (configurable via `RATE_LIMIT_PER_HOUR`)
+   to protect the API budget from abuse.
+5. Call Claude (`claude-sonnet-4-6`) with forced tool use, so the response is
    constrained to the schema in `lib/schema.ts` — no brittle JSON parsing.
    Transient failures are retried once automatically.
-5. Normalize the response (clamp scores, recompute the weighted overall score
+6. Normalize the response (clamp scores, recompute the weighted overall score
    server-side, fill defaults) and return it to the client.
 
-The results dashboard renders inline on the same page (no routing).
+The results dashboard renders inline on the same page (no routing). A **Save as PDF** button opens a print-optimized view so users can export their analysis.
 
 ## Project Structure
 
@@ -78,6 +80,7 @@ components/
 | --- | --- | --- |
 | `ANTHROPIC_API_KEY` | Yes | Read on the server only inside `app/api/analyze/route.ts`. Never exposed to the client. |
 | `ANTHROPIC_MODEL` | No | Overrides the Claude model ID. Defaults to `claude-sonnet-4-6` if unset. |
+| `RATE_LIMIT_PER_HOUR` | No | Max analyses per client IP per hour. Defaults to `10`. Enforced in-memory, per serverless instance. |
 
 ## Deploying to Vercel
 

@@ -48,6 +48,8 @@ production. Changing them in Vercel requires a redeploy to take effect.
   Claude Pro subscription; billed via console.anthropic.com).
 - `ANTHROPIC_MODEL` — optional. The Claude model ID. Defaults to
   `claude-sonnet-4-6` in code if unset.
+- `RATE_LIMIT_PER_HOUR` — optional. Max analyses per client IP per hour.
+  Defaults to `10`. In-memory, per serverless instance.
 
 ## Deployment
 
@@ -70,12 +72,16 @@ production. Changing them in Vercel requires a redeploy to take effect.
   server-side.
 - **Token usage logging.** Every analysis call logs `[analyze] usage ...`
   (input/output/total tokens, stop_reason) to the Vercel Logs tab.
-- **Scope kept tight.** Hardening so far covered AI response reliability only.
+- **In-memory rate limiting.** The API route caps analyses per client IP per
+  hour (`RATE_LIMIT_PER_HOUR`, default 10). State lives in module memory — no
+  external store — so it's enforced per warm serverless instance. Chosen over
+  Upstash Redis to avoid extra infrastructure for an MVP.
+- **Print-to-PDF export.** The results screen has a "Save as PDF" button that
+  triggers `window.print()` against a print stylesheet (`globals.css` plus
+  Tailwind `print:` variants) — no PDF library or extra serverless route.
 
 ## Backlog — ideas discussed but not yet built
 
-- **Abuse / rate-limit protection** — the API route has no rate limiting, so a
-  shared link could run up API cost. Consider per-IP throttling.
 - **File-parsing robustness** — better handling of scanned/image-only PDFs and
   unusual resume formats; clearer guidance when extraction yields no text.
 - **Error-UX polish** — friendlier in-app messaging and retry affordances for

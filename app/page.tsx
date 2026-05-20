@@ -83,7 +83,7 @@ export default function Page() {
 
   return (
     <main className="min-h-screen">
-      <header className="bg-white border-b border-gray-200">
+      <header className="bg-white border-b border-gray-200 print:hidden">
         <div className="mx-auto max-w-4xl px-4 sm:px-6 py-5 flex items-center gap-2">
           <Sparkles
             size={22}
@@ -96,14 +96,14 @@ export default function Page() {
         </div>
       </header>
 
-      <div className="mx-auto max-w-4xl px-4 sm:px-6 py-8 sm:py-12">
+      <div className="mx-auto max-w-4xl px-4 sm:px-6 py-8 sm:py-12 print:py-0 print:px-0">
         {!result && (
           <div className="mb-8">
             <StepIndicator currentStep={step} />
           </div>
         )}
 
-        <div className="rounded-2xl bg-white shadow-sm border border-gray-200 p-5 sm:p-8">
+        <div className="rounded-2xl bg-white shadow-sm border border-gray-200 p-5 sm:p-8 print:border-0 print:shadow-none print:p-0">
           {!result ? (
             <>
               {step === 1 && (
@@ -161,7 +161,7 @@ export default function Page() {
           )}
         </div>
 
-        <footer className="mt-8 text-center text-xs text-gray-500">
+        <footer className="mt-8 text-center text-xs text-gray-500 print:hidden">
           Built with Next.js + Claude. Your resume is scrubbed of personal
           details before analysis.
         </footer>

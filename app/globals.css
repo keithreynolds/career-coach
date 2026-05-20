@@ -14,3 +14,27 @@ body {
 body {
   @apply bg-gray-50 text-gray-900 antialiased;
 }
+
+/* Print styles — used by the "Save as PDF" button on the results page. */
+@page {
+  margin: 1.5cm;
+}
+
+@media print {
+  /* Ensure colored score gauges, badges, and bars render in the PDF. */
+  *,
+  *::before,
+  *::after {
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+  }
+
+  body {
+    background: #fff !important;
+  }
+
+  /* Keep each result section from splitting awkwardly across pages. */
+  section {
+    break-inside: avoid;
+  }
+}

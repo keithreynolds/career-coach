@@ -6,6 +6,7 @@ import {
   X as XIcon,
   Lightbulb,
   RotateCcw,
+  FileDown,
 } from "lucide-react";
 import ScoreGauge from "./ScoreGauge";
 import ScoreBar from "./ScoreBar";
@@ -60,8 +61,22 @@ export default function ResultsDashboard({
 }: ResultsDashboardProps) {
   const { career_lens, structural_audit, impact_score } = result;
 
+  const generatedDate = new Date().toLocaleDateString(undefined, {
+    year: "numeric",
+    month: "long",
+    day: "numeric",
+  });
+
   return (
     <div className="space-y-10">
+      {/* Print-only report header (visible only in the saved PDF) */}
+      <div className="hidden print:block border-b border-gray-300 pb-3">
+        <p className="text-sm font-semibold text-gray-900">
+          AI Career Coach — Resume Analysis Report
+        </p>
+        <p className="text-xs text-gray-500">Generated {generatedDate}</p>
+      </div>
+
       {/* 1. Score Header */}
       <section aria-labelledby="results-heading" className="text-center">
         <h2
@@ -242,12 +257,20 @@ export default function ResultsDashboard({
         </p>
       </section>
 
-      {/* 9. Start Over */}
-      <div className="flex justify-center pt-2">
+      {/* 9. Actions (hidden in the printed PDF) */}
+      <div className="flex flex-col sm:flex-row justify-center gap-3 pt-2 print:hidden">
+        <button
+          type="button"
+          onClick={() => window.print()}
+          className="inline-flex items-center justify-center gap-2 rounded-lg bg-brand-600 px-5 py-2.5 text-white font-medium hover:bg-brand-700 focus:outline-none focus:ring-2 focus:ring-brand-500 focus:ring-offset-2"
+        >
+          <FileDown size={18} aria-hidden="true" />
+          Save as PDF
+        </button>
         <button
           type="button"
           onClick={onReset}
-          className="inline-flex items-center gap-2 rounded-lg border border-gray-300 bg-white px-5 py-2.5 text-gray-700 font-medium hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-brand-500 focus:ring-offset-2"
+          className="inline-flex items-center justify-center gap-2 rounded-lg border border-gray-300 bg-white px-5 py-2.5 text-gray-700 font-medium hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-brand-500 focus:ring-offset-2"
         >
           <RotateCcw size={18} aria-hidden="true" />
           Analyze Another Resume
