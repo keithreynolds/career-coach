@@ -142,6 +142,35 @@ Design decisions for each are recorded in their sections below.
 - Users can recover from transient failures without restarting the whole flow.
 
 ---
+
+## [ ] Test Coverage
+**Description:** Establish a suite of manual and/or automated test cases to verify critical user flows before shipping features. No implementation framework chosen yet — the immediate goal is to capture test cases while they're fresh so they're ready when we prioritise this work.
+
+**Sub-tasks:**
+- [ ] **Choose a testing framework.** Options to evaluate: Playwright (end-to-end, closest to real user flows, good Vercel/Next.js support), Cypress (similar to Playwright, larger ecosystem), Jest + React Testing Library (unit/component level, faster but less coverage of real flows). Recommendation: start with Playwright for the iterative and error-UX flows since they involve multi-step navigation and sessionStorage state.
+
+### Test Case: Iterative Resume Upload
+Covers the full before/after comparison flow introduced in the Iterative Resume Upload feature.
+
+- [x] **Happy path — improvement.** Complete a full analysis. Confirm the results screen shows three action buttons: Save as PDF, Upload Revised Resume, Analyze Another Resume. Click "Upload Revised Resume" and confirm: (a) the app lands directly on step 4 with no step indicator, (b) the prior job description is preserved in state. Upload a stronger resume and submit. Confirm the new results screen shows "Previously X%" with a green "+N pts" chip below the gauge. ✅ Manually verified 2026-05-21. UX feedback: button treatment clean and distinct; improvement delta readable without distracting from the overall dashboard.
+- [ ] **Regression — lower score.** Same flow, but upload a weaker resume second. Confirm the chip is red with a negative delta.
+- [ ] **Same-tab refresh survival.** After getting a first result, hard-refresh the page. Click "Upload Revised Resume", submit a new resume, and confirm the delta still renders (previousResult survived in sessionStorage).
+- [x] **Full reset clears the comparison.** After seeing a delta, click "Analyze Another Resume". Complete a fresh full flow. Confirm the new results screen has no "Previously" line (sessionStorage cleared on reset). ✅ Manually verified 2026-05-21. No regressions observed.
+- [ ] **First-time result has no delta.** Start fresh (or after a full reset) and confirm the score header shows no "Previously" line on the first analysis.
+- [ ] **Discovery questions skipped.** Run the iterative flow without answering discovery questions. Confirm "Upload Revised Resume" works correctly and the delta renders as expected.
+
+### Test Case: Error-UX Polish
+_Skeleton — fill in acceptance details once the Error-UX Polish feature is built._
+
+- [ ] **Validation error.** Submit with a missing or invalid input (e.g. no resume, job description too short). Confirm a human-readable inline message appears — no raw error string or generic "something went wrong."
+- [ ] **Rate limit hit.** Trigger the per-IP hourly cap. Confirm the error message communicates the wait time clearly and does not show a raw 429 response.
+- [ ] **Transient / Claude error.** Simulate a transient API failure (e.g. kill the network mid-request or force a 500 from the route). Confirm a "Try Again" affordance appears and retrying resumes the flow without a full restart.
+- [ ] **Resume parse failure.** Upload a file that yields no extractable text (e.g. a scanned image-only PDF). Confirm a specific, actionable message is shown rather than a generic failure.
+- [ ] **URL fetch failure.** Paste a job posting URL that returns a login wall or too little text. Confirm the "paste the description instead" guidance is shown clearly.
+- [ ] **Recovery — no full restart required.** For every error path above, confirm the user can recover (retry or correct input) without losing their career stage, discovery answers, or job description.
+
+---
+
 ## [ ] XP Polish
 **Description:** Make the in-app user experience smoother, by revising features to make them flow better and more intuitive.
 **Sub-tasks:**

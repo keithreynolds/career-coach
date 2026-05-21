@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { Sparkles, AlertCircle } from "lucide-react";
 import StepIndicator from "@/components/StepIndicator";
 import JourneySelector from "@/components/JourneySelector";
@@ -32,8 +32,23 @@ export default function Page() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [result, setResult] = useState<AnalysisResult | null>(null);
+  const [previousResult, setPreviousResult] = useState<AnalysisResult | null>(null);
+
+  const SESSION_KEY = "career_coach_previous_result";
+
+  // Hydrate previousResult from sessionStorage on mount (survives same-tab refresh)
+  useEffect(() => {
+    try {
+      const stored = sessionStorage.getItem(SESSION_KEY);
+      if (stored) setPreviousResult(JSON.parse(stored) as AnalysisResult);
+    } catch {
+      // Ignore malformed data
+    }
+  }, []);
 
   const reset = useCallback(() => {
+    sessionStorage.removeItem(SESSION_KEY);
+    setPreviousResult(null);
     setStep(1);
     setCareerStage(null);
     setDiscovery(EMPTY_DISCOVERY);
@@ -43,6 +58,22 @@ export default function Page() {
     setError(null);
     setLoading(false);
   }, []);
+
+  // Keep goals + job description; clear only resume + result and jump to upload step
+  const revise = useCallback(() => {
+    if (result) {
+      try {
+        sessionStorage.setItem(SESSION_KEY, JSON.stringify(result));
+      } catch {
+        // sessionStorage unavailable; comparison will be skipped
+      }
+      setPreviousResult(result);
+    }
+    setResumeFile(null);
+    setResult(null);
+    setError(null);
+    setStep(4);
+  }, [result]);
 
   const submit = useCallback(async () => {
     if (!resumeFile || !careerStage) return;
@@ -157,7 +188,12 @@ export default function Page() {
               )}
             </>
           ) : (
-            <ResultsDashboard result={result} onReset={reset} />
+            <ResultsDashboard
+              result={result}
+              previousResult={previousResult}
+              onReset={reset}
+              onRevise={revise}
+            />
           )}
         </div>
 

@@ -7,6 +7,7 @@ import {
   Lightbulb,
   RotateCcw,
   FileDown,
+  Upload,
 } from "lucide-react";
 import ScoreGauge from "./ScoreGauge";
 import ScoreBar from "./ScoreBar";
@@ -14,7 +15,9 @@ import type { AnalysisResult, AuditItem } from "@/lib/types";
 
 type ResultsDashboardProps = {
   result: AnalysisResult;
+  previousResult?: AnalysisResult | null;
   onReset: () => void;
+  onRevise: () => void;
 };
 
 const AUDIT_LABELS: Record<
@@ -57,7 +60,9 @@ function statusVisual(status: AuditItem["status"]) {
 
 export default function ResultsDashboard({
   result,
+  previousResult,
   onReset,
+  onRevise,
 }: ResultsDashboardProps) {
   const { career_lens, structural_audit, impact_score } = result;
 
@@ -85,12 +90,34 @@ export default function ResultsDashboard({
         >
           Your Career Coach Results
         </h2>
-        <div className="flex justify-center">
+        <div className="flex flex-col items-center">
           <ScoreGauge
             score={impact_score.overall_score}
             label={impact_score.score_label}
             size={220}
           />
+          {previousResult && (() => {
+            const prev = Math.round(previousResult.impact_score.overall_score);
+            const curr = Math.round(impact_score.overall_score);
+            const delta = curr - prev;
+            const deltaLabel = delta > 0 ? `+${delta} pts` : delta < 0 ? `${delta} pts` : "No change";
+            const chipClass =
+              delta > 0
+                ? "bg-green-100 text-green-700"
+                : delta < 0
+                ? "bg-red-100 text-red-700"
+                : "bg-gray-100 text-gray-600";
+            return (
+              <p className="mt-2 text-sm text-gray-500">
+                Previously {prev}%{" "}
+                <span
+                  className={`inline-flex items-center rounded-full px-2 py-0.5 text-xs font-semibold ${chipClass}`}
+                >
+                  {deltaLabel}
+                </span>
+              </p>
+            );
+          })()}
         </div>
       </section>
 
@@ -266,6 +293,14 @@ export default function ResultsDashboard({
         >
           <FileDown size={18} aria-hidden="true" />
           Save as PDF
+        </button>
+        <button
+          type="button"
+          onClick={onRevise}
+          className="inline-flex items-center justify-center gap-2 rounded-lg border border-brand-300 bg-brand-50 px-5 py-2.5 text-brand-700 font-medium hover:bg-brand-100 focus:outline-none focus:ring-2 focus:ring-brand-500 focus:ring-offset-2"
+        >
+          <Upload size={18} aria-hidden="true" />
+          Upload Revised Resume
         </button>
         <button
           type="button"
