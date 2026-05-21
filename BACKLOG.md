@@ -52,6 +52,7 @@ Design decisions for each are recorded in their sections below.
 **Acceptance Criteria:**
 - Every suggestion (Summary, Experience, Education) includes a tangible text block for the user to use.
 - The user can improve their score by implementing these direct suggestions into their document.
+- Suggestions should not be repeated verbatim for multiple sections. We should write a test case for this as well when evaluating builds.
 
 ---
 
@@ -139,3 +140,10 @@ Design decisions for each are recorded in their sections below.
 **Acceptance Criteria:**
 - Every error path shows a human-readable message rather than a raw error or generic failure.
 - Users can recover from transient failures without restarting the whole flow.
+
+---
+## [ ] XP Polish
+**Description:** Make the in-app user experience smoother, by revising features to make them flow better and more intuitive.
+**Sub-tasks:**
+- [ ] Change the 5 discovery questions from required to optional so that the user can continue with job and resume uploads quickly
+- [ ] Update the Your North Star and Career Coaching Insight sections on the dashboard page with hints to remind the user that if they go back and answer the questions you can provide actionable plan for them based on their experience and the job posting
