@@ -1,5 +1,17 @@
 # Project Backlog: AI Career Coach
 
+## Current Focus
+
+Three features selected for the current cycle, in build order:
+
+1. **URL Support for Job Descriptions** — shipped
+2. **Iterative Resume Upload** — priority (next)
+3. **Error-UX Polish**
+
+Design decisions for each are recorded in their sections below.
+
+---
+
 ## [x] MVP Launch
 **Description:** Deploy the core "vibe-based" workflow to Vercel, including journey selection, guided discovery, basic resume parsing, and initial scoring.
 **Sub-tasks:**
@@ -14,14 +26,20 @@
 ---
 
 ## [ ] Feature: Iterative Resume Upload (Revised Resume)
-**Description:** Provide an affordance for users to re-upload their resume without re-entering their career goals or the target job description.
+**Description:** Let users upload a revised resume from the results screen without re-entering their goals or the target job description, and show how their score changed.
+**Design decisions:**
+- New "Upload a revised resume" action on the Results Dashboard, alongside (and distinct from) the existing full-restart "Analyze Another Resume" button.
+- Keep `careerStage`, `discovery`, and `jobDescription` in state; clear only the resume file and result; jump straight to the resume-upload step.
+- Show a before/after score comparison (e.g. 62% → 78%) by retaining the previous result.
 **Sub-tasks:**
-- [ ] Add a "Re-upload & Re-evaluate" button to the Results Dashboard.
-- [ ] Preserve the session state for the "Career Lens" (goals) and "Context Input" (job description).
-- [ ] Reset the **Scoring Engine** state to process the new file while maintaining the previous evaluation criteria.
+- [ ] Add a revise path in `page.tsx` that keeps goals + job description and clears only the resume + result.
+- [ ] Add a clearly-labelled "Upload a revised resume" button to the Results Dashboard, distinct from "Analyze Another Resume".
+- [ ] Retain the previous result and pass it to the dashboard for comparison.
+- [ ] Add a before/after delta display to the score header.
 **Acceptance Criteria:**
-- The user can upload a new version of their resume from the dashboard.
-- The system generates a new score and feedback instantly based on the original goals and job requirements.
+- The user can upload a new resume from the dashboard without redoing goals or the job description.
+- The new results screen shows the previous score, the new score, and the change.
+- "Analyze Another Resume" still performs a full restart.
 
 ---
 
@@ -37,13 +55,25 @@
 
 ---
 
-## [ ] Feature: URL Support for Job Descriptions
-**Description:** Enable the existing "Context Input" text area to accept a job posting URL instead of requiring manual text pasting.
+## [x] Feature: URL Support for Job Descriptions
+**Description:** Let the existing Job Description textbox accept a single job-posting URL instead of pasted text. On a recognised URL, the app fetches the page server-side, extracts the job text, and fills the textbox so the user can review and trim it before continuing.
+**Status:** Shipped. Implemented via `lib/jobUrl.ts` (SSRF-guarded fetch + JSON-LD/HTML extraction), `app/api/fetch-jd/route.ts` (Node-runtime endpoint with its own rate limit), and `components/JobDescriptionInput.tsx` (URL detection, load button, loading/error UX).
+**Design decisions:**
+- Same textbox — no separate URL field. Detect a single URL with a regex.
+- Best-effort fetch with graceful fallback. Company career pages (Greenhouse, Lever, Ashby, Workday) usually extract cleanly; LinkedIn and Indeed often return a login wall or JS-rendered shell. If extraction yields too little text, show a clear "paste the description instead" message rather than failing silently.
+- Populate the textbox with the extracted text — transparent, so the user sees and can edit exactly what gets analysed.
+- Update the hint and placeholder text to mention the link option.
 **Sub-tasks:**
-- [ ] Implement Regex logic to identify URL inputs.
-- [ ] Add server-side scraper to fetch and sanitize job requirements from the URL.
+- [x] Detect single-URL input in `JobDescriptionInput.tsx` with a regex.
+- [x] Add a server-side fetch + HTML-to-text extraction step, with SSRF guards (http/https only, block private/internal addresses).
+- [x] Populate the textbox with the extracted text for user review.
+- [x] Special-case the `MIN_LENGTH = 100` validation so a short URL does not block the "Next" button before the fetch runs.
+- [x] Update the hint and placeholder text to mention pasting a link.
+- [x] Show a fallback message when extraction yields too little usable text.
 **Acceptance Criteria:**
-- The system successfully extracts job context from LinkedIn or Indeed URLs.
+- Pasting a fetchable job-posting URL fills the textbox with the extracted job description.
+- A URL that cannot be read shows a clear prompt to paste the text instead — no silent failure.
+- Pasting plain text continues to work exactly as before.
 
 ---
 
@@ -100,11 +130,12 @@
 ---
 
 ## [ ] Error-UX Polish
-**Description:** Make the in-app error states friendlier, with clearer messaging and retry affordances for the failure cases the API already returns.
+**Description:** Make the in-app error states friendlier, with clearer messaging and retry affordances for the failure cases the API already returns. Third feature of the current cycle — also supplies the fallback UX that the URL feature depends on.
 **Sub-tasks:**
 - [ ] Map each API error response (validation, rate limit, parse failure, Claude/transient errors) to a friendly user-facing message.
 - [ ] Add a "Try Again" affordance where retrying is sensible (e.g. transient errors, rate-limit cooldown).
 - [ ] Ensure rate-limit responses communicate the wait time clearly to the user.
+- [ ] Cover the URL-fetch failure case from the URL feature with clear "paste instead" guidance.
 **Acceptance Criteria:**
 - Every error path shows a human-readable message rather than a raw error or generic failure.
 - Users can recover from transient failures without restarting the whole flow.

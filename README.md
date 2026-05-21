@@ -31,7 +31,7 @@ Open http://localhost:3000.
 
 1. **Step 1 — Journey Selection.** User picks New Grad, Mid-Career, or Late-Career.
 2. **Step 2 — Guided Discovery.** Five required prompts capture strengths, dislikes, differentiator, dream job, and stretch goal.
-3. **Step 3 — Job Description.** User pastes the full target JD (minimum 100 characters).
+3. **Step 3 — Job Description.** User pastes the full target JD (minimum 100 characters), or pastes a link to the posting — the app fetches it server-side and fills in the extracted text for review.
 4. **Step 4 — Resume Upload.** Drag-and-drop accepts `.pdf` or `.docx` up to 10 MB.
 
 On submit, `POST /api/analyze` runs:
@@ -57,11 +57,13 @@ app/
   layout.tsx             Root layout + metadata
   globals.css            Tailwind entry
   api/analyze/route.ts   POST endpoint that calls Claude
+  api/fetch-jd/route.ts  POST endpoint that fetches a job-posting URL
 lib/
   pii.ts                 Regex-based PII scrubber
   parser.ts              PDF/DOCX text extraction
   prompt.ts              Super Prompt builder
   schema.ts              Tool-use schema + response normalizer
+  jobUrl.ts              Job-posting URL fetch + extraction (SSRF-guarded)
   types.ts               Shared TS types
 components/
   StepIndicator.tsx
