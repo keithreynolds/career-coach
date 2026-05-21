@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo } from "react";
+import { Info } from "lucide-react";
 import type { DiscoveryAnswers } from "@/lib/types";
 
 type DiscoveryFormProps = {
@@ -55,11 +55,6 @@ export default function DiscoveryForm({
   onBack,
   onNext,
 }: DiscoveryFormProps) {
-  const allFilled = useMemo(
-    () => QUESTIONS.every((q) => values[q.key].trim().length > 0),
-    [values]
-  );
-
   const update = (key: keyof DiscoveryAnswers, val: string) => {
     onChange({ ...values, [key]: val });
   };
@@ -72,16 +67,29 @@ export default function DiscoveryForm({
       >
         Guided Discovery
       </h2>
-      <p className="text-gray-600 mb-6">
+      <p className="text-gray-600 mb-4">
         Answer five quick prompts so the AI understands the career you actually
         want — not just the one your resume currently describes.
       </p>
+
+      <div className="flex gap-3 rounded-xl bg-brand-50 border border-brand-100 px-4 py-3 mb-6">
+        <Info
+          size={18}
+          className="mt-0.5 flex-shrink-0 text-brand-600"
+          aria-hidden="true"
+        />
+        <p className="text-sm text-brand-900 leading-relaxed">
+          These questions help us tailor your North Star and coaching insights
+          to the career you actually want. If you just want a quick resume
+          score, skip ahead — you can always come back and fill these in later.
+        </p>
+      </div>
 
       <form
         className="space-y-5"
         onSubmit={(e) => {
           e.preventDefault();
-          if (allFilled) onNext();
+          onNext();
         }}
       >
         {QUESTIONS.map((q, idx) => (
@@ -97,7 +105,6 @@ export default function DiscoveryForm({
               id={q.key}
               name={q.key}
               rows={3}
-              required
               value={values[q.key]}
               onChange={(e) => update(q.key, e.target.value)}
               placeholder={q.placeholder}
@@ -116,8 +123,7 @@ export default function DiscoveryForm({
           </button>
           <button
             type="submit"
-            disabled={!allFilled}
-            className="inline-flex items-center justify-center rounded-lg bg-brand-600 px-5 py-2.5 text-white font-medium shadow-sm hover:bg-brand-700 disabled:bg-gray-300 disabled:cursor-not-allowed focus:outline-none focus:ring-2 focus:ring-brand-500 focus:ring-offset-2"
+            className="inline-flex items-center justify-center rounded-lg bg-brand-600 px-5 py-2.5 text-white font-medium shadow-sm hover:bg-brand-700 focus:outline-none focus:ring-2 focus:ring-brand-500 focus:ring-offset-2"
           >
             Next
           </button>

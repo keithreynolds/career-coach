@@ -174,5 +174,5 @@ _Skeleton — fill in acceptance details once the Error-UX Polish feature is bui
 ## [ ] XP Polish
 **Description:** Make the in-app user experience smoother, by revising features to make them flow better and more intuitive.
 **Sub-tasks:**
-- [ ] Change the 5 discovery questions from required to optional so that the user can continue with job and resume uploads quickly
+- [x] Change the 5 discovery questions from required to optional so that the user can continue with job and resume uploads quickly
 - [ ] Update the Your North Star and Career Coaching Insight sections on the dashboard page with hints to remind the user that if they go back and answer the questions you can provide actionable plan for them based on their experience and the job posting
