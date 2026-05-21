@@ -130,13 +130,14 @@ Design decisions for each are recorded in their sections below.
 
 ---
 
-## [ ] Error-UX Polish
+## [x] Error-UX Polish
 **Description:** Make the in-app error states friendlier, with clearer messaging and retry affordances for the failure cases the API already returns. Third feature of the current cycle — also supplies the fallback UX that the URL feature depends on.
 **Sub-tasks:**
-- [ ] Map each API error response (validation, rate limit, parse failure, Claude/transient errors) to a friendly user-facing message.
-- [ ] Add a "Try Again" affordance where retrying is sensible (e.g. transient errors, rate-limit cooldown).
-- [ ] Ensure rate-limit responses communicate the wait time clearly to the user.
-- [ ] Cover the URL-fetch failure case from the URL feature with clear "paste instead" guidance.
+- [x] Map each API error response (validation, rate limit, parse failure, Claude/transient errors) to a friendly user-facing message.
+- [x] Add a "Try Again" affordance where retrying is sensible (e.g. transient errors, rate-limit cooldown).
+- [x] Ensure rate-limit responses communicate the wait time clearly to the user.
+- [x] Cover the URL-fetch failure case from the URL feature with clear "paste instead" guidance.
+- [x] Fix regression: remove discovery fields from required validation in analyze/route.ts (fields are now optional per XP Polish).
 **Acceptance Criteria:**
 - Every error path shows a human-readable message rather than a raw error or generic failure.
 - Users can recover from transient failures without restarting the whole flow.

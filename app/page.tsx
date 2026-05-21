@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
-import { Sparkles, AlertCircle } from "lucide-react";
+import { Sparkles, AlertCircle, RefreshCw } from "lucide-react";
 import StepIndicator from "@/components/StepIndicator";
 import JourneySelector from "@/components/JourneySelector";
 import DiscoveryForm from "@/components/DiscoveryForm";
@@ -30,7 +30,7 @@ export default function Page() {
   const [resumeFile, setResumeFile] = useState<File | null>(null);
 
   const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  const [error, setError] = useState<{ message: string; retryable: boolean } | null>(null);
   const [result, setResult] = useState<AnalysisResult | null>(null);
   const [previousResult, setPreviousResult] = useState<AnalysisResult | null>(null);
 
@@ -98,15 +98,18 @@ export default function Page() {
 
       const data = await res.json();
       if (!res.ok) {
-        throw new Error(
-          data?.error || `Request failed with status ${res.status}`
-        );
+        const message = data?.error || `Request failed with status ${res.status}`;
+        // 5xx errors are transient and worth retrying; 4xx are user-fixable.
+        const retryable = res.status >= 500;
+        setError({ message, retryable });
+        return;
       }
       setResult(data as AnalysisResult);
     } catch (err: unknown) {
+      // Network-level failure (offline, timeout) — always retryable.
       const message =
         err instanceof Error ? err.message : "Something went wrong.";
-      setError(message);
+      setError({ message, retryable: true });
     } finally {
       setLoading(false);
     }
@@ -180,9 +183,23 @@ export default function Page() {
                     className="mt-0.5 flex-shrink-0"
                     aria-hidden="true"
                   />
-                  <div>
-                    <p className="font-medium">Something went wrong.</p>
-                    <p className="mt-0.5">{error}</p>
+                  <div className="flex-1">
+                    <p className="font-medium">
+                      {error.retryable
+                        ? "Something went wrong on our end."
+                        : "Unable to complete analysis."}
+                    </p>
+                    <p className="mt-0.5">{error.message}</p>
+                    {error.retryable && (
+                      <button
+                        type="button"
+                        onClick={() => { setError(null); submit(); }}
+                        className="mt-3 inline-flex items-center gap-1.5 rounded-lg border border-red-300 bg-white px-3 py-1.5 text-xs font-medium text-red-700 hover:bg-red-50 focus:outline-none focus:ring-2 focus:ring-red-400 focus:ring-offset-1"
+                      >
+                        <RefreshCw size={13} aria-hidden="true" />
+                        Try Again
+                      </button>
+                    )}
                   </div>
                 </div>
               )}

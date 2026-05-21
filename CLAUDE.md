@@ -123,8 +123,8 @@ Environment Variables for production; a redeploy is required after changes.
 See `BACKLOG.md` for full details, sub-tasks, and acceptance criteria. Current cycle:
 
 1. **URL Support for Job Descriptions** — ✅ shipped
-2. **Iterative Resume Upload** — ✅ shipped (today's session)
-3. **Error-UX Polish** — next up
+2. **Iterative Resume Upload** — ✅ shipped
+3. **Error-UX Polish** — ✅ shipped
 
 ---
 

@@ -186,18 +186,17 @@ export async function POST(req: NextRequest) {
     ).trim();
     const resume = formData.get("resume");
 
-    // Validate text fields
-    const missing: string[] = [];
-    if (!career_stage) missing.push("career_stage");
-    if (!strengths) missing.push("strengths");
-    if (!dislikes) missing.push("dislikes");
-    if (!differentiator) missing.push("differentiator");
-    if (!dream_job) missing.push("dream_job");
-    if (!stretch_goal) missing.push("stretch_goal");
-    if (!job_description) missing.push("job_description");
-    if (missing.length > 0) {
+    // Validate required fields. Discovery fields (strengths, dislikes, etc.)
+    // are intentionally optional — users may skip them for a quick score.
+    if (!career_stage) {
       return NextResponse.json(
-        { error: `Missing required fields: ${missing.join(", ")}` },
+        { error: "Please select a career stage before continuing." },
+        { status: 400 }
+      );
+    }
+    if (!job_description) {
+      return NextResponse.json(
+        { error: "Please provide a job description before continuing." },
         { status: 400 }
       );
     }
