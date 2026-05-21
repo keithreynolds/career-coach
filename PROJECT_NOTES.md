@@ -82,10 +82,8 @@ production. Changing them in Vercel requires a redeploy to take effect.
 
 ## Backlog — ideas discussed but not yet built
 
-- **File-parsing robustness** — better handling of scanned/image-only PDFs and
-  unusual resume formats; clearer guidance when extraction yields no text.
-- **Error-UX polish** — friendlier in-app messaging and retry affordances for
-  the error states the API already returns.
+The backlog now lives in its own file: see `BACKLOG.md`. It's the single
+source of truth for planned features, sub-tasks, and acceptance criteria.
 
 ## How to resume work
 
