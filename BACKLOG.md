@@ -78,6 +78,21 @@ Design decisions for each are recorded in their sections below.
 
 ---
 
+## [ ] Dependency Health
+**Description:** Address a `DeprecationWarning: url.parse() behavior is not standardized and prone to errors that have security implications` warning appearing in the dev terminal. Our own code already uses the WHATWG `new URL()` API throughout (`lib/jobUrl.ts`) — the warning originates from a transient dependency, most likely `pdf-parse`, which is unmaintained (last published ~2019) and uses legacy Node.js APIs. No CVE has been issued yet, but the warning is explicit that `url.parse()` vulnerabilities will not be patched.
+**Sub-tasks:**
+- [ ] **Identify the source.** Run `node --trace-deprecation` during `npm run dev` and submit to pinpoint the exact call site and package triggering the warning.
+- [ ] **Evaluate `pdf-parse` alternatives.** Primary candidates: `unpdf` (modern, maintained, works in edge/serverless environments), `pdfjs-dist` (Mozilla's PDF.js, actively maintained). Evaluate each against our use case: extracting plain text from user-uploaded PDFs in a Node.js API route. Consider bundle size and serverless cold-start impact.
+- [ ] **Replace `pdf-parse` if a suitable alternative exists.** Update `lib/parser.ts` and remove `pdf-parse` + `@types/pdf-parse` from `package.json`. Test against a range of real-world PDF resumes (text-based, multi-column, tables).
+- [ ] **Audit and update other outdated packages.** Run `npm outdated` and review: `@anthropic-ai/sdk` (at `0.27.3`), `next` (at `14.2.13`), `lucide-react`, and others. Update cautiously — test after each major bump. Pay attention to any breaking changes in the Anthropic SDK.
+- [ ] **Add a note to the deployment workflow** about running `npm outdated` periodically as routine maintenance.
+**Acceptance Criteria:**
+- The `url.parse()` deprecation warning no longer appears during `npm run dev` or in Vercel logs.
+- Resume parsing continues to work correctly across PDF and DOCX formats.
+- No regressions introduced by dependency updates.
+
+---
+
 ## [ ] Advanced 16-Point Structural Audit
 **Description:** Expand the completeness check into a deep-dive audit of formatting, date consistency, and contact placement.
 **Sub-tasks:**
