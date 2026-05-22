@@ -13,6 +13,7 @@ import type {
   CareerStage,
   DiscoveryAnswers,
 } from "@/lib/types";
+import { trackEvent } from "@/lib/analytics";
 
 const EMPTY_DISCOVERY: DiscoveryAnswers = {
   strengths: "",
@@ -30,7 +31,7 @@ export default function Page() {
   const [resumeFile, setResumeFile] = useState<File | null>(null);
 
   const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<{ message: string; retryable: boolean } | null>(null);
+  const [error, setError] = useState<{ message: string; retryable: boolean; errorType: "validation" | "rate_limit" | "transient" } | null>(null);
   const [result, setResult] = useState<AnalysisResult | null>(null);
   const [previousResult, setPreviousResult] = useState<AnalysisResult | null>(null);
 
@@ -47,6 +48,7 @@ export default function Page() {
   }, []);
 
   const reset = useCallback(() => {
+    trackEvent("full_reset");
     sessionStorage.removeItem(SESSION_KEY);
     setPreviousResult(null);
     setStep(1);
@@ -61,6 +63,7 @@ export default function Page() {
 
   // Keep goals + job description; clear only resume + result and jump to upload step
   const revise = useCallback(() => {
+    trackEvent("revised_resume_started");
     if (result) {
       try {
         sessionStorage.setItem(SESSION_KEY, JSON.stringify(result));
@@ -79,6 +82,7 @@ export default function Page() {
     if (!resumeFile || !careerStage) return;
     setLoading(true);
     setError(null);
+    trackEvent("analysis_submitted", { career_stage: careerStage });
 
     try {
       const formData = new FormData();
@@ -99,17 +103,27 @@ export default function Page() {
       const data = await res.json();
       if (!res.ok) {
         const message = data?.error || `Request failed with status ${res.status}`;
-        // 5xx errors are transient and worth retrying; 4xx are user-fixable.
         const retryable = res.status >= 500;
-        setError({ message, retryable });
+        const errorType =
+          res.status === 429 ? "rate_limit"
+          : res.status >= 500 ? "transient"
+          : "validation";
+        trackEvent("analysis_error", { error_type: errorType });
+        setError({ message, retryable, errorType });
         return;
       }
-      setResult(data as AnalysisResult);
+      const analysisResult = data as AnalysisResult;
+      trackEvent("analysis_complete", {
+        overall_score: analysisResult.impact_score.overall_score,
+        career_stage: careerStage,
+      });
+      setResult(analysisResult);
     } catch (err: unknown) {
       // Network-level failure (offline, timeout) — always retryable.
       const message =
         err instanceof Error ? err.message : "Something went wrong.";
-      setError({ message, retryable: true });
+      trackEvent("analysis_error", { error_type: "transient" });
+      setError({ message, retryable: true, errorType: "transient" });
     } finally {
       setLoading(false);
     }
@@ -144,7 +158,10 @@ export default function Page() {
                 <JourneySelector
                   value={careerStage}
                   onChange={setCareerStage}
-                  onNext={() => setStep(2)}
+                  onNext={() => {
+                    trackEvent("journey_selected", { career_stage: careerStage });
+                    setStep(2);
+                  }}
                 />
               )}
               {step === 2 && (
@@ -152,7 +169,13 @@ export default function Page() {
                   values={discovery}
                   onChange={setDiscovery}
                   onBack={() => setStep(1)}
-                  onNext={() => setStep(3)}
+                  onNext={() => {
+                    const skipped = Object.values(discovery).every(
+                      (v) => v.trim() === ""
+                    );
+                    trackEvent("discovery_completed", { skipped });
+                    setStep(3);
+                  }}
                 />
               )}
               {step === 3 && (
@@ -160,7 +183,10 @@ export default function Page() {
                   value={jobDescription}
                   onChange={setJobDescription}
                   onBack={() => setStep(2)}
-                  onNext={() => setStep(4)}
+                  onNext={() => {
+                    trackEvent("job_description_entered");
+                    setStep(4);
+                  }}
                 />
               )}
               {step === 4 && (

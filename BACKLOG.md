@@ -2,11 +2,18 @@
 
 ## Current Focus
 
-Three features selected for the current cycle, in build order:
+Three features selected for the next cycle, in build order:
+
+1. **Add Google Analytics tracking**
+2. **Add a Feedback Form for users to contact the developer**
+3. **Test Coverage**
+4. **XP Polish**
+
+## Recent Releases, in build order: 
 
 1. **URL Support for Job Descriptions** — shipped
-2. **Iterative Resume Upload** — priority (next)
-3. **Error-UX Polish**
+2. **Iterative Resume Upload** — shipped
+3. **Error-UX Polish** — shipped
 
 Design decisions for each are recorded in their sections below.
 
@@ -25,17 +32,25 @@ Design decisions for each are recorded in their sections below.
 
 ---
 
-## [ ] Feature: Iterative Resume Upload (Revised Resume)
+[x] Feature: Add Google Analytics
+**Description** Using tracking info from my Google Analytics suite, let's add tracking to this app's web pages so that we can add a user funnel for conversion measurement and track inbound traffic.
+**Status:** Shipped. GA4 (G-6YL136BXKF) wired via `next/script` in `app/layout.tsx`. Custom events tracked via `lib/analytics.ts` (`trackEvent` wrapper). Events: `journey_selected`, `discovery_completed` (with `skipped` property), `job_description_entered`, `analysis_submitted`, `analysis_complete` (with `overall_score`), `analysis_error` (with `error_type`), `revised_resume_started`, `full_reset`.
+
+[ ] Feature: Add Feedback Form
+**Description** Add a feedback form to the app so that at any point in the workflow, a user can contact the developer to report a bug or make a feature request
+
+
+## [x] Feature: Iterative Resume Upload (Revised Resume)
 **Description:** Let users upload a revised resume from the results screen without re-entering their goals or the target job description, and show how their score changed.
 **Design decisions:**
 - New "Upload a revised resume" action on the Results Dashboard, alongside (and distinct from) the existing full-restart "Analyze Another Resume" button.
 - Keep `careerStage`, `discovery`, and `jobDescription` in state; clear only the resume file and result; jump straight to the resume-upload step.
 - Show a before/after score comparison (e.g. 62% → 78%) by retaining the previous result.
 **Sub-tasks:**
-- [ ] Add a revise path in `page.tsx` that keeps goals + job description and clears only the resume + result.
-- [ ] Add a clearly-labelled "Upload a revised resume" button to the Results Dashboard, distinct from "Analyze Another Resume".
-- [ ] Retain the previous result and pass it to the dashboard for comparison.
-- [ ] Add a before/after delta display to the score header.
+- [x] Add a revise path in `page.tsx` that keeps goals + job description and clears only the resume + result.
+- [x] Add a clearly-labelled "Upload a revised resume" button to the Results Dashboard, distinct from "Analyze Another Resume".
+- [x] Retain the previous result and pass it to the dashboard for comparison.
+- [x] Add a before/after delta display to the score header.
 **Acceptance Criteria:**
 - The user can upload a new resume from the dashboard without redoing goals or the job description.
 - The new results screen shows the previous score, the new score, and the change.
