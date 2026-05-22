@@ -39,7 +39,7 @@ export default function FeedbackButton({ contextLabel }: Props) {
         },
         body: JSON.stringify({
           message,
-          email: email.trim() || "(not provided)",
+          ...(email.trim() && { email: email.trim() }),
           context: contextLabel,
         }),
       });
