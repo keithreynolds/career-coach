@@ -2,10 +2,10 @@
 
 ## Current Focus
 
-Three features selected for the next cycle, in build order:
+Features selected for the current cycle, in build order:
 
-1. **Add Google Analytics tracking**
-2. **Add a Feedback Form for users to contact the developer**
+1. ~~**Add Google Analytics tracking**~~ — ✅ shipped
+2. ~~**Add a Feedback Form for users to contact the developer**~~ — ✅ shipped
 3. **Test Coverage**
 4. **XP Polish**
 
@@ -14,6 +14,7 @@ Three features selected for the next cycle, in build order:
 1. **URL Support for Job Descriptions** — shipped
 2. **Iterative Resume Upload** — shipped
 3. **Error-UX Polish** — shipped
+4. **Google Analytics** — shipped
 
 Design decisions for each are recorded in their sections below.
 
@@ -36,8 +37,9 @@ Design decisions for each are recorded in their sections below.
 **Description** Using tracking info from my Google Analytics suite, let's add tracking to this app's web pages so that we can add a user funnel for conversion measurement and track inbound traffic.
 **Status:** Shipped. GA4 (G-6YL136BXKF) wired via `next/script` in `app/layout.tsx`. Custom events tracked via `lib/analytics.ts` (`trackEvent` wrapper). Events: `journey_selected`, `discovery_completed` (with `skipped` property), `job_description_entered`, `analysis_submitted`, `analysis_complete` (with `overall_score`), `analysis_error` (with `error_type`), `revised_resume_started`, `full_reset`.
 
-[ ] Feature: Add Feedback Form
+[x] Feature: Add Feedback Form
 **Description** Add a feedback form to the app so that at any point in the workflow, a user can contact the developer to report a bug or make a feature request
+**Status:** Shipped. Floating pill button (bottom-right, `fixed bottom-6 right-6`, `print:hidden`) visible from step 2 onwards. Modal with backdrop, step context label ("You're at: Step X — ..."), required message textarea, optional email field with privacy note, Formspree endpoint `https://formspree.io/f/xwvzodbb`. Submits JSON `{ message, email, context }`. Status machine: `idle | submitting | success | error`. Calls `trackEvent("feedback_submitted", { context })` on success. Implemented in `components/FeedbackButton.tsx`; wired into `app/page.tsx`.
 
 
 ## [x] Feature: Iterative Resume Upload (Revised Resume)

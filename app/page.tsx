@@ -8,6 +8,7 @@ import DiscoveryForm from "@/components/DiscoveryForm";
 import JobDescriptionInput from "@/components/JobDescriptionInput";
 import ResumeUpload from "@/components/ResumeUpload";
 import ResultsDashboard from "@/components/ResultsDashboard";
+import FeedbackButton from "@/components/FeedbackButton";
 import type {
   AnalysisResult,
   CareerStage,
@@ -245,6 +246,21 @@ export default function Page() {
           details before analysis.
         </footer>
       </div>
+
+      {/* Feedback button — visible once the user is engaged (step 2+) */}
+      {(step >= 2 || result !== null) && (
+        <FeedbackButton
+          contextLabel={
+            result
+              ? "Viewing your results"
+              : step === 2
+              ? "Step 2 — Guided Discovery"
+              : step === 3
+              ? "Step 3 — Job Description"
+              : "Step 4 — Resume Upload"
+          }
+        />
+      )}
     </main>
   );
 }
