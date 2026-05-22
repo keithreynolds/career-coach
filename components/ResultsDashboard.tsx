@@ -8,6 +8,7 @@ import {
   RotateCcw,
   FileDown,
   Upload,
+  ArrowRight,
 } from "lucide-react";
 import ScoreGauge from "./ScoreGauge";
 import ScoreBar from "./ScoreBar";
@@ -16,8 +17,10 @@ import type { AnalysisResult, AuditItem } from "@/lib/types";
 type ResultsDashboardProps = {
   result: AnalysisResult;
   previousResult?: AnalysisResult | null;
+  discoverySkipped?: boolean;
   onReset: () => void;
   onRevise: () => void;
+  onGoToDiscovery: () => void;
 };
 
 const AUDIT_LABELS: Record<
@@ -61,8 +64,10 @@ function statusVisual(status: AuditItem["status"]) {
 export default function ResultsDashboard({
   result,
   previousResult,
+  discoverySkipped,
   onReset,
   onRevise,
+  onGoToDiscovery,
 }: ResultsDashboardProps) {
   const { career_lens, structural_audit, impact_score } = result;
 
@@ -132,6 +137,21 @@ export default function ResultsDashboard({
         <p className="rounded-xl bg-brand-50 border border-brand-100 p-4 text-gray-800 leading-relaxed">
           {career_lens.north_star}
         </p>
+        {discoverySkipped && (
+          <div className="mt-3 flex items-center justify-between gap-3 rounded-lg border border-brand-200 bg-brand-50 px-4 py-3 text-sm print:hidden">
+            <p className="text-brand-900">
+              Answer the discovery questions to get a North Star tailored to the career you actually want.
+            </p>
+            <button
+              type="button"
+              onClick={onGoToDiscovery}
+              className="inline-flex flex-shrink-0 items-center gap-1.5 rounded-lg bg-brand-600 px-3 py-1.5 text-xs font-medium text-white hover:bg-brand-700 focus:outline-none focus:ring-2 focus:ring-brand-500 focus:ring-offset-1"
+            >
+              Answer questions
+              <ArrowRight size={13} aria-hidden="true" />
+            </button>
+          </div>
+        )}
         <ul className="mt-5 space-y-2.5">
           {career_lens.success_indicators.map((indicator, i) => (
             <li key={i} className="flex items-start gap-3">
@@ -266,25 +286,24 @@ export default function ResultsDashboard({
             {impact_score.coaching_tip}
           </p>
         </div>
+        {discoverySkipped && (
+          <div className="mt-3 flex items-center justify-between gap-3 rounded-lg border border-brand-200 bg-brand-50 px-4 py-3 text-sm print:hidden">
+            <p className="text-brand-900">
+              Share your goals and what makes you unique to unlock a personalized action plan based on this job.
+            </p>
+            <button
+              type="button"
+              onClick={onGoToDiscovery}
+              className="inline-flex flex-shrink-0 items-center gap-1.5 rounded-lg bg-brand-600 px-3 py-1.5 text-xs font-medium text-white hover:bg-brand-700 focus:outline-none focus:ring-2 focus:ring-brand-500 focus:ring-offset-1"
+            >
+              Answer questions
+              <ArrowRight size={13} aria-hidden="true" />
+            </button>
+          </div>
+        )}
       </section>
 
-      {/* 8. AI Voice Warning */}
-      <section
-        role="note"
-        aria-label="AI voice warning"
-        className="flex gap-3 rounded-xl bg-yellow-50 border border-yellow-300 p-4"
-      >
-        <AlertTriangle
-          size={22}
-          className="mt-0.5 flex-shrink-0 text-yellow-700"
-          aria-hidden="true"
-        />
-        <p className="text-yellow-900 leading-relaxed">
-          {impact_score.ai_voice_warning}
-        </p>
-      </section>
-
-      {/* 9. Actions (hidden in the printed PDF) */}
+      {/* 8. Actions (hidden in the printed PDF) */}
       <div className="flex flex-col sm:flex-row justify-center gap-3 pt-2 print:hidden">
         <button
           type="button"

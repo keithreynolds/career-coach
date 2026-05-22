@@ -7,7 +7,7 @@ Features selected for the current cycle, in build order:
 1. ~~**Add Google Analytics tracking**~~ — ✅ shipped
 2. ~~**Add a Feedback Form for users to contact the developer**~~ — ✅ shipped
 3. **Test Coverage**
-4. **XP Polish**
+4. ~~**XP Polish**~~ — ✅ shipped
 
 ## Recent Releases, in build order: 
 
@@ -15,6 +15,8 @@ Features selected for the current cycle, in build order:
 2. **Iterative Resume Upload** — shipped
 3. **Error-UX Polish** — shipped
 4. **Google Analytics** — shipped
+5. **Feedback Form** — shipped
+6. **XP Polish** — shipped (includes discovery nudge banners, returning-to-results flow, loading overlay, AI voice warning removal)
 
 Design decisions for each are recorded in their sections below.
 
@@ -204,8 +206,31 @@ _Skeleton — fill in acceptance details once the Error-UX Polish feature is bui
 
 ---
 
-## [ ] XP Polish
+## [x] XP Polish
 **Description:** Make the in-app user experience smoother, by revising features to make them flow better and more intuitive.
+**Status:** Shipped.
 **Sub-tasks:**
 - [x] Change the 5 discovery questions from required to optional so that the user can continue with job and resume uploads quickly
-- [ ] Update the Your North Star and Career Coaching Insight sections on the dashboard page with hints to remind the user that if they go back and answer the questions you can provide actionable plan for them based on their experience and the job posting
+- [x] Update the Your North Star and Career Coaching Insight sections on the dashboard page with hints to remind the user that if they go back and answer the questions you can provide actionable plan for them based on their experience and the job posting
+- [x] Remove the AI Voice Warning banner ("49% of hiring managers…") from the results dashboard — page was getting cluttered
+- [x] Add returning-to-results flow: clicking "Answer questions" from the dashboard now auto-submits with the existing resume after discovery, skipping the upload step entirely
+- [x] Add loading overlay: during analysis, the step form is replaced by a centered spinner (`Loader2`) and the step indicator is hidden — applies to all submit paths, not just returning flow
+**Design decisions:**
+- Conditional nudge banners shown only when all 5 discovery fields were left blank (`discoverySkipped` prop). Hidden for users who answered — no redundant prompt.
+- Each banner has a distinct message tailored to its section, plus an "Answer questions →" CTA that triggers `goToDiscovery`.
+- `goToDiscovery` keeps `resumeFile` in state (does not clear it), sets `returningToResults = true`, clears the result, and jumps to step 2.
+- When `returningToResults` is true, step 2's "Next" calls `submit()` directly and clears the flag — no `setStep(4)`. The loading overlay appears immediately and results replace it when done.
+- If the user goes back from step 2 to step 1 during the returning flow, `returningToResults` is cleared so the normal step progression resumes.
+- Returning-to-results does **not** set `previousResult` — the delta chip is for revised resumes, not personalization re-runs.
+- `discovery_revisit_started` GA event tracks uptake of the nudge banners.
+- Banners and loading overlay are `print:hidden`.
+
+## [ ] Feature: Discovery Revisit Feature Flag
+**Description:** Put the returning-to-results path (nudge banners + auto-submit after discovery) behind a `NEXT_PUBLIC_` environment variable so it can be enabled in dev/staging without immediately shipping to all production users.
+**Pending decision:** Agreed in principle. Not yet implemented.
+**Design decisions:**
+- Flag name: `NEXT_PUBLIC_DISCOVERY_REVISIT=true`
+- `NEXT_PUBLIC_` vars are baked into the client bundle at build time in Next.js — toggling requires a Vercel redeploy (fast but not instant).
+- Flag gates the nudge banners in `ResultsDashboard` and the `onGoToDiscovery` prop. If off, banners never render and `goToDiscovery` is never reachable.
+- The loading overlay and step indicator changes are **not** gated — they are general UX improvements that shipped to all users regardless of this flag.
+- When the feature is considered stable, remove the flag and clean up the conditional.

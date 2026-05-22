@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
-import { Sparkles, AlertCircle, RefreshCw } from "lucide-react";
+import { Sparkles, AlertCircle, RefreshCw, Loader2 } from "lucide-react";
 import StepIndicator from "@/components/StepIndicator";
 import JourneySelector from "@/components/JourneySelector";
 import DiscoveryForm from "@/components/DiscoveryForm";
@@ -35,6 +35,7 @@ export default function Page() {
   const [error, setError] = useState<{ message: string; retryable: boolean; errorType: "validation" | "rate_limit" | "transient" } | null>(null);
   const [result, setResult] = useState<AnalysisResult | null>(null);
   const [previousResult, setPreviousResult] = useState<AnalysisResult | null>(null);
+  const [returningToResults, setReturningToResults] = useState(false);
 
   const SESSION_KEY = "career_coach_previous_result";
 
@@ -60,6 +61,17 @@ export default function Page() {
     setResult(null);
     setError(null);
     setLoading(false);
+    setReturningToResults(false);
+  }, []);
+
+  // Navigate back to discovery (step 2) keeping resume + job description intact,
+  // so on "Next" we can auto-submit without making the user re-upload.
+  const goToDiscovery = useCallback(() => {
+    trackEvent("discovery_revisit_started");
+    setResult(null);
+    setError(null);
+    setReturningToResults(true);
+    setStep(2);
   }, []);
 
   // Keep goals + job description; clear only resume + result and jump to upload step
@@ -146,7 +158,7 @@ export default function Page() {
       </header>
 
       <div className="mx-auto max-w-4xl px-4 sm:px-6 py-8 sm:py-12 print:py-0 print:px-0">
-        {!result && (
+        {!result && !loading && (
           <div className="mb-8">
             <StepIndicator currentStep={step} />
           </div>
@@ -155,7 +167,16 @@ export default function Page() {
         <div className="rounded-2xl bg-white shadow-sm border border-gray-200 p-5 sm:p-8 print:border-0 print:shadow-none print:p-0">
           {!result ? (
             <>
-              {step === 1 && (
+              {loading ? (
+                <div className="flex flex-col items-center gap-4 py-20 text-center">
+                  <Loader2
+                    size={36}
+                    className="animate-spin text-brand-600"
+                    aria-hidden="true"
+                  />
+                  <p className="text-sm text-gray-500">Analyzing your resume…</p>
+                </div>
+              ) : step === 1 ? (
                 <JourneySelector
                   value={careerStage}
                   onChange={setCareerStage}
@@ -164,22 +185,28 @@ export default function Page() {
                     setStep(2);
                   }}
                 />
-              )}
-              {step === 2 && (
+              ) : step === 2 ? (
                 <DiscoveryForm
                   values={discovery}
                   onChange={setDiscovery}
-                  onBack={() => setStep(1)}
+                  onBack={() => {
+                    setReturningToResults(false);
+                    setStep(1);
+                  }}
                   onNext={() => {
                     const skipped = Object.values(discovery).every(
                       (v) => v.trim() === ""
                     );
                     trackEvent("discovery_completed", { skipped });
-                    setStep(3);
+                    if (returningToResults) {
+                      setReturningToResults(false);
+                      submit();
+                    } else {
+                      setStep(3);
+                    }
                   }}
                 />
-              )}
-              {step === 3 && (
+              ) : step === 3 ? (
                 <JobDescriptionInput
                   value={jobDescription}
                   onChange={setJobDescription}
@@ -189,8 +216,7 @@ export default function Page() {
                     setStep(4);
                   }}
                 />
-              )}
-              {step === 4 && (
+              ) : (
                 <ResumeUpload
                   file={resumeFile}
                   onChange={setResumeFile}
@@ -235,8 +261,10 @@ export default function Page() {
             <ResultsDashboard
               result={result}
               previousResult={previousResult}
+              discoverySkipped={Object.values(discovery).every((v) => v.trim() === "")}
               onReset={reset}
               onRevise={revise}
+              onGoToDiscovery={goToDiscovery}
             />
           )}
         </div>

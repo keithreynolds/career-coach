@@ -46,6 +46,7 @@ components/
   StepIndicator, JourneySelector, DiscoveryForm
   JobDescriptionInput, ResumeUpload
   ResultsDashboard, ScoreGauge, ScoreBar
+  FeedbackButton
 ```
 
 ---
@@ -79,6 +80,24 @@ snapshot — this is acceptable because comparison is a single-session activity.
 **Token usage logging.** Every analysis call logs `[analyze] usage ...` (input/output/total
 tokens, stop_reason) to Vercel Logs.
 
+**Discovery revisit flow.** When a user skips discovery and lands on results, nudge banners
+appear in the "Your North Star" and "Career Coaching Insight" sections (hidden if discovery
+was answered). Clicking "Answer questions" calls `goToDiscovery`, which keeps `resumeFile`
+and `jobDescription` in state, sets `returningToResults = true`, clears the result, and jumps
+to step 2. When the user completes step 2 and clicks Next, `submit()` is called directly —
+no upload step. A loading overlay replaces the step content during analysis; results replace
+it when done. Going back from step 2 to step 1 clears `returningToResults`. This flow does
+not update `previousResult` (no delta chip — that is for revised resumes only).
+
+**Loading overlay.** When `loading` is true, a centered `Loader2` spinner replaces all step
+content in the card and the step indicator is hidden. This applies to all submit paths
+(normal step 4 submit and returning-to-results). Implemented in `app/page.tsx`.
+
+**Feedback form.** `FeedbackButton.tsx` renders a fixed pill button (bottom-right, `print:hidden`)
+visible from step 2 onwards. Opens a modal with a required message field, optional email, and
+step context. Submits to Formspree (`https://formspree.io/f/xwvzodbb`) as JSON. Fires
+`trackEvent("feedback_submitted")` on success.
+
 ---
 
 ## Environment variables
@@ -88,6 +107,7 @@ tokens, stop_reason) to Vercel Logs.
 | `ANTHROPIC_API_KEY` | Yes | — | Server-only; never exposed to client |
 | `ANTHROPIC_MODEL` | No | `claude-sonnet-4-6` | Override the Claude model ID |
 | `RATE_LIMIT_PER_HOUR` | No | `10` | Analyses per client IP per hour |
+| `NEXT_PUBLIC_DISCOVERY_REVISIT` | No | `false` | Enable discovery revisit flow (nudge banners + auto-submit). Baked into client bundle at build time — requires redeploy to toggle. Not yet implemented; see BACKLOG.md. |
 
 Set in `.env.local` for local dev (git-ignored). Set in Vercel → Project Settings →
 Environment Variables for production; a redeploy is required after changes.
@@ -115,6 +135,9 @@ Environment Variables for production; a redeploy is required after changes.
 - Before/after score delta is top-level only (no per-section comparison) — keep the UX clean
 - Delta display format: `Previously X% [+N pts chip]` directly below ScoreGauge; chip is
   green for improvement, red for regression, grey for no change; hidden when no prior result
+- During analysis, a centered spinner replaces the entire step card content; step indicator
+  is hidden. No per-step loading states — the overlay handles all submit paths uniformly.
+- The AI Voice Warning banner has been removed from the results dashboard (was cluttering the page)
 
 ---
 
@@ -122,9 +145,11 @@ Environment Variables for production; a redeploy is required after changes.
 
 See `BACKLOG.md` for full details, sub-tasks, and acceptance criteria. Current cycle:
 
-1. **URL Support for Job Descriptions** — ✅ shipped
-2. **Iterative Resume Upload** — ✅ shipped
-3. **Error-UX Polish** — ✅ shipped
+1. ~~**Google Analytics**~~ — ✅ shipped
+2. ~~**Feedback Form**~~ — ✅ shipped
+3. ~~**XP Polish**~~ — ✅ shipped (includes discovery nudge banners, returning-to-results flow, loading overlay, AI voice warning removal)
+4. **Test Coverage** — pending
+5. **Discovery Revisit Feature Flag** — pending decision (see BACKLOG.md)
 
 ---
 
