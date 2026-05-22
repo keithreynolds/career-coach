@@ -77,7 +77,7 @@ export default function ResultsDashboard({
       {/* Print-only report header (visible only in the saved PDF) */}
       <div className="hidden print:block border-b border-gray-300 pb-3">
         <p className="text-sm font-semibold text-gray-900">
-          AI Career Coach — Resume Analysis Report
+          RateMyResume — Resume Analysis Report
         </p>
         <p className="text-xs text-gray-500">Generated {generatedDate}</p>
       </div>

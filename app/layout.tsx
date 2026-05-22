@@ -4,7 +4,7 @@ import { SpeedInsights } from "@vercel/speed-insights/next";
 import "./globals.css";
 
 export const metadata: Metadata = {
-  title: "AI Career Coach",
+  title: "RateMyResume",
   description:
     "Get an AI-powered career lens, structural audit, and impact score for your resume against any job description.",
   robots: { index: true, follow: true },

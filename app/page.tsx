@@ -125,7 +125,7 @@ export default function Page() {
             aria-hidden="true"
           />
           <h1 className="text-lg font-semibold text-gray-900">
-            AI Career Coach
+            RateMyResume
           </h1>
         </div>
       </header>
